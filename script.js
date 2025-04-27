@@ -1,72 +1,63 @@
-const key = "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";
-const inputText = document.getElementById("input");
-const image = document.getElementById("image");
-const GenBtn = document.getElementById("btn");
-const svg = document.getElementById("svg");
-const load = document.getElementById("loading");
-const ResetBtn = document.getElementById("reset");
-const downloadBtn = document.getElementById("download");
+const selectTag = document.querySelectorAll("select");
+const translateBtn = document.querySelector("#transfer");
+const fromText = document.querySelector("#fromText");
+const toText = document.querySelector("#toText");
+const icons = document.querySelectorAll("img");
 
-async function query(data) {
-	const response = await fetch(
-		"https://api-inference.huggingface.co/models/ZB-Tech/Text-to-Image",
-		{
-			headers: {
-				Authorization:`Bearer ${key}`
-				
-			},
-			method: "POST",
-			body: JSON.stringify({"inputs": inputText.value}),
-		}
-	);
-	const result = await response.blob();
-	image.style.display="block";
-	load.style.display="none";
-	return result;
-}
-async function  generate() {
-	
- load.style.display="block";
-query().then((response) => {
-	const objectUrl = URL.createObjectURL(response);
-	image.src = objectUrl;
-	downloadBtn.addEventListener("click" , ()=>{
-		download(objectUrl)
-	})
 
-	
+
+selectTag.forEach((tag , id)=>{
+    
+
+    for (const countriesCode in countries) {
+        let selected ;
+        if( id == 0 && countriesCode == "en-GB"){
+            selected =" selected";
+        }else if(id == 1 && countriesCode == "hi-IN"){
+            selected =" selected";
+        }
+        let option = ` <option value="${countriesCode}" ${selected}>${countries[countriesCode]}</option>`;
+        tag.insertAdjacentHTML("beforeend", option);
+        }
 });
-}
 
-GenBtn.addEventListener( "click" , () =>{
-	generate();
-		svg.style.display="none"
+translateBtn.addEventListener("click" , ()=> {
+  let Text = fromText.value,
+  translateFrom = selectTag[0].value,
+  translateTo = selectTag[1].value;
+
+  let apiURL= `https://api.mymemory.translated.net/get?q=${Text}!&langpair=${ translateFrom}|${translateTo}`;
+  
+  fetch(apiURL).then(res => res.json()).then(data =>{
+
+ 
+    toText.value = data.responseData.translatedText;
+});
+ 
 
 });
 
-inputText.addEventListener( "keydown" , (e) =>{
-   if(e.key == "Enter")
-   {
-	generate();
-	svg.style.display="none"
-   }
-   
-})
-ResetBtn.addEventListener ("click" , () =>{
-    inputText.value = ""
-	window.location.reload();
+icons.forEach(icon =>{
+icon.addEventListener( "click" , ({target}) => {
+    if(target.classList.contains("copy") ){
+        if(target.id == "from"){
+           navigator.clipboard.writeText(fromText.value)
+        }
+        else{
+            navigator.clipboard.writeText(toText.value)
+        }
+    }
+    else{
+        let utterance;
+        if(target.id == "from"){
+           utterance = new SpeechSynthesisUtterance(fromText.value)
+           utterance.lang = selectTag[0].value;
 
-})
- function download(objectUrl){
-
-
- fetch(objectUrl).then(res=>res.blob())
- .then(file=>{
-	let a = document.createElement("a");
-	a.href = URL.createObjectURL(file);
-    a.download = new Date().getTime();
-	a.click();
- })
- .catch(()=> alert("failed Download"));
-}
-
+        }else{
+            utterance = new SpeechSynthesisUtterance(toText.value)
+            utterance.lang = selectTag[1].value;
+        }
+        speechSynthesis.speak(utterance);
+    }
+});
+});
